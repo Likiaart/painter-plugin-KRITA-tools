@@ -1,10 +1,6 @@
 import QtQuick 2.2
 import Painter 1.0
 import QtQuick.Layouts 1.2
-import QtQuick.Dialogs 1.0
-import QtQuick.Controls 1.4
-import QtQuick.Controls.Styles 1.4
-import Qt.labs.platform 1.1
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
 
@@ -23,16 +19,6 @@ PainterPlugin {
 		}
 		var sendtoAction = alg.ui.addAction(alg.ui.AppMenu.SendTo, qsTr("Export to Krita"), qsTr("Export to Krita"), Qt.resolvedUrl("icons/Krita_idle.png"), Qt.resolvedUrl("icons/Krita_idle.png"));
 		sendtoAction.triggered.connect(internal.sendToTriggered);
-
-		//check if kritarunner folder exists
-		var appdata = StandardPaths.standardLocations(StandardPaths.HomeLocation)[0];
-		//remove file:///
-		appdata = appdata.substring(8);
-		var kritarunnerFolder = appdata + "/AppData/Roaming/kritarunner";
-		if (!alg.fileIO.exists(kritarunnerFolder)) {
-			alg.log.info("Running Kritarunner for the first time");
-			alg.subprocess.startDetached(["\"" + alg.settings.value("kritaPath")  + "\"", "-s", "runner"]);
-		}
 	}
 
 	onConfigure: {
@@ -87,7 +73,7 @@ PainterPlugin {
 		function sendToTriggered() {
 			if (!internal.loading) {
 				if (!alg.settings.contains("KritaPath") && alg.settings.value("launchKrita", false)) {
-					fileDialog.open();
+					configurePanel.open();
 				} else {
 					internal.launchExportDialog()
 				}
@@ -150,17 +136,6 @@ PainterPlugin {
 					}
 				}
 			}
-		}
-	}
-
-	FileDialog {
-		id: fileDialog
-		title: qsTr("Please locate KritaRunner...")
-		nameFilters: [ "Krita files (*.exe *.app)", "All files (*)" ]
-		//selectedNameFilter: "Executable files (*)"
-		onAccepted: {
-			alg.settings.setValue("KritaPath", alg.fileIO.urlToLocalFile(fileUrl.toString()));
-			internal.launchExportDialog()
 		}
 	}
 }
