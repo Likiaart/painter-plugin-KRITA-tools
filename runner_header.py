@@ -11,6 +11,14 @@ from PIL import ImageStat
 from PIL import ImageMath
 import traceback
 
+def debugLog(message):
+    try:
+        logPath = os.path.join(os.environ.get("APPDATA", ""), "kritarunner", "debug.log")
+        with open(logPath, "a") as f:
+            f.write(message + "\n")
+    except Exception:
+        pass
+
 def addFileLayer(doc, node, path, layerName, opacity, blendmode):
     #double the forward slashes
     path = path.replace("/", "//")
