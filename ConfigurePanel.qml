@@ -1,6 +1,5 @@
 import QtQuick 2.3
 import QtQuick.Window 2.2
-import QtQuick.Dialogs 1.2
 import QtQuick.Controls 2.0
 import QtQuick.Layouts 1.3
 import AlgWidgets 2.0
@@ -61,6 +60,12 @@ AlgDialog {
             Layout.fillWidth: true
           }
 
+          AlgLabel {
+            text: qsTr("Paste the full path to kritarunner.exe (e.g. C:/Program Files/Krita (x64)/bin/kritarunner.exe)")
+            Layout.fillWidth: true
+            opacity: 0.6
+          }
+
           RowLayout {
             spacing: 6
             Layout.fillWidth: true
@@ -69,7 +74,7 @@ AlgDialog {
               id: path
               borderActivated: true
               wrapMode: TextEdit.Wrap
-              readOnly: true
+              readOnly: false
               Layout.fillWidth: true
 
               function reload() {
@@ -78,15 +83,6 @@ AlgDialog {
 
               Component.onCompleted: {
                 reload()
-              }
-            }
-
-            AlgButton {
-              id: searchPathButton
-              text: qsTr("Set path")
-              onClicked: {
-                // open the search path dialog
-                searchPathDialog.setVisible(true)
               }
             }
           }
@@ -169,21 +165,6 @@ AlgDialog {
             }
           }
         }
-      }
-    }
-  }
-
-  FileDialog {
-    id: searchPathDialog
-    title: qsTr("Choose a Krita executable file...")
-    nameFilters: [ "Krita files (*.exe *.app)", "All files (*)" ]
-    selectedNameFilter: "Executable files (*)"
-    onAccepted: {
-      path.text = alg.fileIO.urlToLocalFile(fileUrl.toString())
-    }
-    onVisibleChanged: {
-      if (!visible) {
-        configureDialog.requestActivate();
       }
     }
   }
