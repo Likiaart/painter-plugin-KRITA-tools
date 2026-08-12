@@ -193,7 +193,7 @@ KritaExporter.prototype = {
           this.kritaScript += tab + "root.removeChildNode(root.childNodes()[0])\n";
           
           //set total layers
-          this.kritaScript += tab + "window.setTotalProgress(" + stack.layers.length + ", \"individual\")\n";
+          this.kritaScript += tab + "window.setTotalProgress(" + (stack.layers ? stack.layers.length : 0) + ", \"individual\")\n";
           
           // Add default background based on channel
           if(this.channel === "normal") {
@@ -213,8 +213,9 @@ KritaExporter.prototype = {
             this.kritaScript += tab + "doc.setBackgroundColor(QColor(0, 0, 0, 0))\n";
           }
           
-          for (var layerId = 0; layerId < stack.layers.length; ++layerId) {
-            this.layersDFS(stack.layers[layerId], "root", progress, self);
+          var stackLayers = stack.layers || [];
+          for (var layerId = 0; layerId < stackLayers.length; ++layerId) {
+            this.layersDFS(stackLayers[layerId], "root", progress, self);
             //Update the progress bar
             this.kritaScript += tab + "window.updateProgress(" + layerId + ",\"" + this.materialName + "_" + this.stackName + "_" + this.channel + "_" + layerId + "\", \"individual\")\n";
           }
@@ -423,13 +424,30 @@ function KritaExporter(ptext, pbar) {
   footerScript.close();
 
   try{
-    var appdata = StandardPaths.standardLocations(StandardPaths.HomeLocation)[0];
-    //remove file:///
-    appdata = appdata.substring(8);
-    var kritarunnerFolder = appdata + "/AppData/Roaming/kritarunner";
+    var appdata = alg.subprocess.check_output(["cmd", "/c", "echo %APPDATA%"]).trim().replace(/\\/g, "/");
+    var kritarunnerFolder = appdata + "/kritarunner";
+    var pykritaFolder = kritarunnerFolder + "/pykrita";
+    var kritarunnerFolderWin = kritarunnerFolder.replace(/\//g, "\\");
+    var pykritaFolderWin = pykritaFolder.replace(/\//g, "\\");
+
+    try {
+      alg.subprocess.check_output(["cmd", "/c", "mkdir " + kritarunnerFolderWin]);
+    } catch (mkdirError) {
+      // Ignore: the folder most likely already exists
+    }
+    try {
+      alg.subprocess.check_output(["cmd", "/c", "mkdir " + pykritaFolderWin]);
+    } catch (mkdirError) {
+      // Ignore: the folder most likely already exists
+    }
+
     var scriptFile = alg.fileIO.open(kritarunnerFolder + "/runner.py", 'w');
     scriptFile.write(this.kritaScript);
     scriptFile.close();
+
+    var scriptFile2 = alg.fileIO.open(pykritaFolder + "/runner.py", 'w');
+    scriptFile2.write(this.kritaScript);
+    scriptFile2.close();
   } catch (error) {
     alg.log.error(error.message);
     return;
@@ -439,9 +457,15 @@ function KritaExporter(ptext, pbar) {
   if (alg.settings.value("launchKrita", false)) {
     this.logProgressText("Starting Krita...");
     if (Qt.platform.os == "windows") {
-      //alg.subprocess.startDetached(["\"" + "C:/Program Files/Krita (x64)/bin/kritarunner.exe"  + "\"", "-s", "runner"]);
-      alg.subprocess.startDetached(["\"" + alg.settings.value("kritaPath")  + "\"", "-s", "runner"]);
-      //alg.subprocess.startDetached(["\"" + alg.settings.value("photoshopPath", "") + "\"", "\"" + this.exportPath.split('/').join('\\') + "photoshopScript.jsx\""]);
+      var kritaPath = alg.settings.value("KritaPath", "");
+      if (kritaPath.indexOf("file:///") === 0) {
+        kritaPath = alg.fileIO.urlToLocalFile(kritaPath);
+      }
+      try {
+        alg.subprocess.startDetached([kritaPath, "-s", "runner"]);
+      } catch (launchError) {
+        alg.log.error("Could not launch Krita: " + launchError.message);
+      }
     }
   }
 
